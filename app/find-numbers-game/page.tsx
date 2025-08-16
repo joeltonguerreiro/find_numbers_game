@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
-import styles from './AttentionTest.module.css';
+import styles from './FindNumbersGame.module.css';
 
 interface Ranking {
   id: number;
@@ -12,7 +12,7 @@ interface Ranking {
   game_mode: string;
 }
 
-const AttentionTestPage = () => {
+const FindNumbersGamePage = () => {
   const [gridSize, setGridSize] = useState(4);
   const [maxNumber, setMaxNumber] = useState(16);
   const [numbers, setNumbers] = useState<number[]>([]);
@@ -216,7 +216,7 @@ const AttentionTestPage = () => {
   return (
     <div className={styles.body}>
       <div className={styles.container}>
-        <h1 className={styles.h1}>Attention Test</h1>
+        <h1 className={styles.h1}>Find Numbers Game</h1>
 
         <div className={styles.difficultyControls}>
           <button
@@ -305,4 +305,4 @@ const AttentionTestPage = () => {
   );
 };
 
-export default AttentionTestPage;
+export default FindNumbersGamePage;
