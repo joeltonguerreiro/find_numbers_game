@@ -12,15 +12,25 @@ export async function GET(request: Request) {
     query = query.eq('game_mode', `${game_mode}x${game_mode}`);
   }
 
-  const { data, error } = await query
-    .order('time', { ascending: true })
-    .limit(20);
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json(data);
+  const bestScores = data.reduce((acc, score) => {
+    const name = score.name.toLowerCase();
+    if (!acc[name] || score.time < acc[name].time) {
+      acc[name] = score;
+    }
+    return acc;
+  }, {} as Record<string, typeof data[0]>);
+
+  const sortedScores = Object.values(bestScores)
+    .sort((a, b) => a.time - b.time)
+    .slice(0, 20);
+
+  return NextResponse.json(sortedScores);
 }
 
 export async function POST(request: Request) {
@@ -30,9 +40,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Missing name, time, or game_mode' }, { status: 400 });
   }
 
+  const trimmedName = name.trim();
+
   const { data, error } = await supabase
     .from('rankings')
-    .insert([{ name, time, game_mode: `${game_mode}x${game_mode}` }])
+    .insert([{ name: trimmedName, time, game_mode: `${game_mode}x${game_mode}` }])
     .select();
 
   if (error) {

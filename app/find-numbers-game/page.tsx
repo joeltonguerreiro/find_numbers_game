@@ -26,6 +26,7 @@ const FindNumbersGamePage = () => {
   const [playerName, setPlayerName] = useState('');
   const [error, setError] = useState('');
   const [rankingGameMode, setRankingGameMode] = useState(4);
+  const [isSaving, setIsSaving] = useState(false);
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -120,6 +121,7 @@ const FindNumbersGamePage = () => {
       return;
     }
 
+    setIsSaving(true);
     try {
       const res = await fetch('/api/rankings', {
         method: 'POST',
@@ -138,6 +140,8 @@ const FindNumbersGamePage = () => {
       setRankingGameMode(gridSize);
     } catch (error) {
       setError('Could not save score.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -290,8 +294,8 @@ const FindNumbersGamePage = () => {
               placeholder="Your Name"
             />
             {error && <div className={styles.error}>{error}</div>}
-            <button onClick={handleSaveScore} className={styles.button}>
-              Save Score
+            <button onClick={handleSaveScore} className={styles.button} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save Score'}
             </button>
             <button
               onClick={handlePlayAgain}
