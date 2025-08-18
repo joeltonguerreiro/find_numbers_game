@@ -2,6 +2,14 @@
 import { supabase } from '@/lib/supabaseClient';
 import { NextResponse } from 'next/server';
 
+interface Score {
+  id: number;
+  created_at: string;
+  name: string;
+  time: number;
+  game_mode: string;
+}
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const game_mode = searchParams.get('game_mode');
@@ -18,13 +26,13 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const bestScores = data.reduce((acc, score) => {
+  const bestScores = (data as Score[]).reduce((acc, score) => {
     const name = score.name.toLowerCase();
     if (!acc[name] || score.time < acc[name].time) {
       acc[name] = score;
     }
     return acc;
-  }, {} as Record<string, typeof data[0]>);
+  }, {} as Record<string, Score>);
 
   const sortedScores = Object.values(bestScores)
     .sort((a, b) => a.time - b.time)
