@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import styles from './FindNumbersGame.module.css';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 interface Ranking {
   id: number;
@@ -27,6 +28,10 @@ const FindNumbersGamePage = () => {
   const [error, setError] = useState('');
   const [rankingGameMode, setRankingGameMode] = useState(4);
   const [isSaving, setIsSaving] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<string | null>(null);
+  const [userHistory, setUserHistory] = useState<Ranking[]>([]);
+
 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
@@ -115,6 +120,21 @@ const FindNumbersGamePage = () => {
     }
   };
 
+  const fetchUserHistory = async (name: string, gameMode: number) => {
+    try {
+      const res = await fetch(`/api/rankings?name=${name}&game_mode=${gameMode}`);
+      if (!res.ok) {
+        throw new Error("Failed to fetch user's history");
+      }
+      const data = await res.json();
+      setUserHistory(data);
+      setSelectedUser(name);
+      setShowHistoryModal(true);
+    } catch (error) {
+      setError("Could not load user's history.");
+    }
+  };
+
   const handleSaveScore = async () => {
     if (!playerName.trim()) {
       setError('Please enter your name.');
@@ -194,6 +214,7 @@ const FindNumbersGamePage = () => {
                 <th>Name</th>
                 <th>Time (s)</th>
                 <th>Date</th>
+                <th>History</th>
               </tr>
             </thead>
             <tbody>
@@ -202,7 +223,12 @@ const FindNumbersGamePage = () => {
                   <td className={styles.position}>{i + 1}</td>
                   <td>{r.name}</td>
                   <td>{r.time.toFixed(3)}</td>
-                  <td>{new Date(r.created_at).toLocaleDateString()}</td>
+                  <td>{new Date(r.created_at).toLocaleDateString('pt-BR')}</td>
+                  <td>
+                    <button onClick={() => fetchUserHistory(r.name, rankingGameMode)} className={styles.historyButton}>
+                      View History
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -213,6 +239,36 @@ const FindNumbersGamePage = () => {
             </button>
           </div>
         </div>
+
+        {showHistoryModal && selectedUser && (
+          <div className={`${styles.resultModal} ${styles.active} ${styles.historyModal}`}>
+            <div className={styles.resultContent}>
+              <h2 className={styles.h2}>{selectedUser}'s History</h2>
+              <div className={styles.historyInfo}>
+                <p>Times Played: {userHistory.length}</p>
+                <p>Best Time: {Math.min(...userHistory.map(h => h.time)).toFixed(4)}s</p>
+              </div>
+              <div className={styles.chartContainer}>
+                <ResponsiveContainer width="100%" height={400}>
+                  <LineChart data={userHistory} margin={{ top: 20, right: 30, bottom: 60, left: 30 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="created_at" tickFormatter={(tick) => new Date(tick).toLocaleDateString('pt-BR')} angle={-45} textAnchor="end" padding={{ left: 10, right: 10 }} />
+                    <YAxis />
+                    <Tooltip
+                      labelFormatter={(label) => new Date(label).toLocaleString('pt-BR')}
+                      formatter={(value) => [(value as number).toFixed(4), 'Time']}
+                    />
+                    <Legend verticalAlign="top" />
+                    <Line type="monotone" dataKey="time" stroke="#8884d8" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <button onClick={() => setShowHistoryModal(false)} className={styles.button}>
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

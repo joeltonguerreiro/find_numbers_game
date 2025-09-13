@@ -13,6 +13,11 @@ interface Score {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const game_mode = searchParams.get('game_mode');
+  const name = searchParams.get('name');
+
+  if (name) {
+    return getUserScores(name, game_mode);
+  }
 
   let query = supabase.from('rankings').select('*');
 
@@ -39,6 +44,26 @@ export async function GET(request: Request) {
     .slice(0, 20);
 
   return NextResponse.json(sortedScores);
+}
+
+async function getUserScores(name: string, game_mode: string | null) {
+  let query = supabase
+    .from('rankings')
+    .select('time, created_at')
+    .eq('name', name)
+    .order('created_at', { ascending: true });
+
+  if (game_mode) {
+    query = query.eq('game_mode', `${game_mode}x${game_mode}`);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(data);
 }
 
 export async function POST(request: Request) {
